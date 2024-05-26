@@ -1,7 +1,8 @@
 // users.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, BeforeInsert } from 'typeorm';
 import { Post } from 'src/post/entities/post.entity';
 import { Chat } from 'src/chat/entities/chat.entity';
+import * as bcrypt from 'bcrypt';
 
 @Entity()
 export class User {
@@ -16,6 +17,12 @@ export class User {
 
   @Column()
   password: string;
+
+  @BeforeInsert()
+  async hashPassword() {
+    // Genera un hash para la contraseña antes de insertarla en la base de datos
+    this.password = await bcrypt.hash(this.password, 10); // 10 es el número de rondas de hashing
+  }
 
   @Column()
   firstName: string; // Nombre

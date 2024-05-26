@@ -1,36 +1,27 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
-import { Auth } from './entities/auth.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(Auth)
-    private authRepository: Repository<Auth>,
+    private jwtService: JwtService,
+    @InjectRepository(User)
+    private usuariosRepository: Repository<User>,
   ) {}
 
-  createAuth(auth: CreateAuthDto){
-    const newAuth = this.authRepository.create(auth)
-    return this.authRepository.save(newAuth)
-  }
-  
+  async validateUser({ username, password }: CreateAuthDto) {
+    const user = await this.usuariosRepository.findOne({ where: { username } });
+    if (!user) return null;
 
-  findAll() {
-    return this.authRepository.find();
-  }
-
-  findOne(id: string) {
-    //return this.authRepository.findOne();
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (isPasswordMatch) {
+      return this.jwtService.signAsync({ userId: user.id, username: user.username });
+    }
+    return null;
   }
 }
