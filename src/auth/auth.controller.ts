@@ -9,7 +9,7 @@ export class AuthController {
   @Post('login') // Ruta para el inicio de sesión
   async login(@Body() createAuthDto: CreateAuthDto) {
     const user = await this.authService.validateUser(createAuthDto);
-    if (!user) throw new HttpException('Credenciales invalidas', HttpStatus.FORBIDDEN);
+    if (!user) throw new HttpException('Credenciales invalidas', HttpStatus.UNAUTHORIZED);
     return user;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,12 +16,12 @@ export class AuthService {
 
   async validateUser({ username, password }: CreateAuthDto) {
     const user = await this.usuariosRepository.findOne({ where: { username } });
-    if (!user) return null;
+    if (!user) return new HttpException('usuario no encontrado', HttpStatus.NOT_FOUND);
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (isPasswordMatch) {
       return this.jwtService.signAsync({ userId: user.id, username: user.username });
     }
-    return null;
+    return new HttpException('Contraseña invalida', HttpStatus.UNAUTHORIZED);
   }
 }

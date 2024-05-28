@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,19 +17,25 @@ export class PostService {
     return this.PostRepository.save(newPost);
   }
 
-  findAll() {
-    return this.PostRepository.find();
+  async findAll() {
+    return  await this.PostRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} post`;
+  async findOne(type: 'text' | 'image' | 'video') {
+    const postFound = await this.PostRepository.findOne({
+      where:{
+        type
+      }
+    })
+    if (!postFound) throw new HttpException('Post no encontrado', HttpStatus.NOT_FOUND)
+    return postFound;
   }
 
   update(id: number, updatePostDto: UpdatePostDto) {
     return `This action updates a #${id} post`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} post`;
+  async remove(id: number) {
+    return await this.PostRepository.delete(id);
   }
 }

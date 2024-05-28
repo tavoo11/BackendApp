@@ -17,9 +17,9 @@ export class PostController {
     return this.postService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postService.findOne(+id);
+  @Get(':type')
+  findOne(@Param('type') type: 'text' | 'image' | 'video') {
+    return this.postService.findOne(type);
   }
 
   @Patch(':id')

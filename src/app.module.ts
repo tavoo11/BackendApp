@@ -4,17 +4,29 @@ import { PostModule } from './post/post.module';
 import { ChatModule } from './chat/chat.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm'; 
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Module({
-  imports: [TypeOrmModule.forRoot({
-    type: 'mysql',
-    host: 'localhost',
-    port: 3306,
-    username: 'root',
-    password: '12345678',
-    database: 'challengedb',
-    entities: [__dirname + '/**/*.entity{.ts,.js}'],
-    synchronize: true
-  }), UsersModule, PostModule, ChatModule, AuthModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [
+        () => ({
+          database: require('../ormconfig.json'),
+        }),
+      ],
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        configService.get<TypeOrmModuleOptions>('database'),
+    }),
+    UsersModule,
+    PostModule,
+    ChatModule,
+    AuthModule,
+  ],
 })
 export class AppModule {}
