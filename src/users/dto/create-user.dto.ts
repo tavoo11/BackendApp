@@ -3,7 +3,8 @@ export class CreateUserDto {
     username: string
     email: string
     password: string
-    firstname: string
-    lastname: string
+    firstName: string
+    lastName: string
     birthDate: Date
+    profilePhotoUrl?: string
 }

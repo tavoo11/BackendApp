@@ -13,7 +13,6 @@ export class UsersService {
   ){}
 
   async createUser(user : CreateUserDto) {
-
     const userFound = await this.userRepository.findOne({
       where: {
         username: user.username,
@@ -22,12 +21,11 @@ export class UsersService {
     })
 
     if (!userFound){
-      const newUser = this.userRepository.create(user)
+      const newUser = this.userRepository.create(user);
       return this.userRepository.save(newUser);
-      
     }
     
-    return new HttpException('El usuario ya existe', HttpStatus.CONFLICT)
+    return new HttpException('El usuario ya existe', HttpStatus.CONFLICT);
   }
 
   findAll() {
@@ -36,23 +34,21 @@ export class UsersService {
 
   async findOne(id: number) {
     const userFound = await this.userRepository.findOne({
-      where: {
-        id,
-      }
-    })
+      where: { id },
+    });
 
-    if (!userFound){
-      return new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND)
+    if (!userFound) {
+      return new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
     }
 
     return userFound;
   }
 
   update(id: number, updateUser: UpdateUserDto) {
-    return this.userRepository.update({id}, updateUser);
+    return this.userRepository.update({ id }, updateUser);
   }
 
   remove(id: number) {
-    return this.userRepository.delete({id});
+    return this.userRepository.delete({ id });
   }
 }
