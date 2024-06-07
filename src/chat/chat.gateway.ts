@@ -1,51 +1,58 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import {
+  MessageBody,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+  ConnectedSocket,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
-import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+  cors:{
+    origin: "*"
+  }
 })
-export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-
+export class ChatGateway {
   @WebSocketServer()
-  public server: Server;
+  server: Server;
+
+  private activeUsers = new Map<string, string>();
 
   constructor(private readonly chatService: ChatService) {}
-  
-  afterInit(server: Server) {
-    console.log('WebSocket initialized');
+
+  async handleConnection(client: Socket) {
+    const userId = client.handshake.query.userId as string;
+    if (userId) {
+      this.activeUsers.set(client.id, userId);
+      client.join(`user_${userId}`);
+      console.log(`User ${userId} connected and joined room user_${userId}`);
+    } else {
+      console.log('User undefined connected');
+    }
   }
 
-  handleConnection(client: Socket) {
-    console.log('Cliente conectado:', client.id);
-  }
-
-  handleDisconnect(client: Socket) {
-    console.log('Cliente desconectado:', client.id);
+  async handleDisconnect(client: Socket) {
+    const userId = this.activeUsers.get(client.id);
+    if (userId) {
+      client.leave(`user_${userId}`);
+      this.activeUsers.delete(client.id);
+      console.log(`User ${userId} disconnected and left room user_${userId}`);
+    } else {
+      console.log('User undefined disconnected');
+    }
   }
 
   @SubscribeMessage('createChat')
-  async create(@MessageBody() createChatDto: CreateChatDto) {
-    const message = await this.chatService.create(createChatDto);
-    this.server.emit('receiveMessage', message);  // Emitir mensaje a todos los clientes conectados
-    return message;
-  }
-
-  @SubscribeMessage('findAllChat')
-  async findAll() {
-    return this.chatService.findAll();
-  }
-
-  @SubscribeMessage('findOneChat')
-  async findOne(@MessageBody() id: number) {
-    return this.chatService.findOne(id);
-  }
-
-  @SubscribeMessage('removeChat')
-  async remove(@MessageBody() id: number) {
-    return this.chatService.remove(id);
+  async handleCreateChat(@MessageBody() createChatDto: CreateChatDto): Promise<void> {
+    try {
+      const message = await this.chatService.createMessage(createChatDto);
+      const roomId = `user_${createChatDto.receiverId}`;
+      this.server.to(roomId).emit('receiveMessage', message);
+      console.log('Message sent to room:', roomId);
+    } catch (error) {
+      console.error('Error creating message:', error);
+    }
   }
 }

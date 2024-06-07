@@ -5,7 +5,6 @@ import { diskStorage } from 'multer';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { User } from './entities/user.entity';
-import { join } from 'path';
 
 @Module({
   imports: [
@@ -23,5 +22,6 @@ import { join } from 'path';
   ],
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [TypeOrmModule]
 })
 export class UsersModule {}

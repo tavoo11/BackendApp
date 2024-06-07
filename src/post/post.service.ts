@@ -38,4 +38,14 @@ export class PostService {
   async remove(id: number) {
     return await this.PostRepository.delete(id);
   }
+
+  async getPostHistory(userId: number): Promise<Post[]>{
+    return await this.PostRepository.find({
+      where: [
+        {author: {id: userId}}
+      ],
+      relations: ['author'],
+      order: {id: 'DESC'}
+    });
+  }
 }

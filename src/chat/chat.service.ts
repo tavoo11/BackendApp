@@ -3,48 +3,44 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Chat } from './entities/chat.entity';
 import { CreateChatDto } from './dto/create-chat.dto';
-import { UpdateChatDto } from './dto/update-chat.dto';
+import { User } from 'src/users/entities/user.entity';
+//import { ChatGateway } from './chat.gateway'
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectRepository(Chat)
     private chatRepository: Repository<Chat>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    //private chatGateway: ChatGateway, // Inyecta el ChatGateway
   ) {}
 
-  async create(createChatDto: CreateChatDto): Promise<Chat> {
-    const newChat = this.chatRepository.create(createChatDto);
-    return this.chatRepository.save(newChat);
-  }
+  async createMessage(createChatDto: CreateChatDto): Promise<Chat> {
+    const { content, senderId, receiverId } = createChatDto;
 
-  async findAll(): Promise<Chat[]> {
-    return await this.chatRepository.find({ relations: ['sender', 'receiver'] });
-  }
+    const sender = await this.userRepository.findOne({ where: { id: senderId } });
+    const receiver = await this.userRepository.findOne({ where: { id: receiverId } });
 
-  async findOne(id: number): Promise<Chat> {
-    return this.chatRepository.findOne({
-      where: { id },
-      relations: ['sender', 'receiver'],
+
+    console.log('Sender:', sender); // Agregar esta línea para debug
+    console.log('Receiver:', receiver); // Agregar esta línea para debug
+
+    if (!sender || !receiver) {
+      throw new Error('Sender or receiver not found');
+    }
+
+    const message = this.chatRepository.create({
+      content,
+      sender,
+      receiver,
     });
-  }
 
-  async update(id: number, updateChatDto: UpdateChatDto): Promise<Chat> {
-    await this.chatRepository.update(id, updateChatDto);
-    return this.findOne(id);
-  }
+    await this.chatRepository.save(message);
 
-  async remove(id: number): Promise<void> {
-    await this.chatRepository.delete(id);
-  }
+     // Emitir el mensaje al ChatGateway
+     //this.chatGateway.handleCreateChat(message);
 
-  async getChatHistory(userId1: number, userId2: number): Promise<Chat[]> {
-    return await this.chatRepository.find({
-      where: [
-        { sender: { id: userId1 }, receiver: { id: userId2 } },
-        { sender: { id: userId2 }, receiver: { id: userId1 } },
-      ],
-      relations: ['sender', 'receiver'],
-      order: { id: 'ASC' }, // Ordenar los mensajes por ID (o fecha) ascendentemente
-    });
+    return message;
   }
 }
