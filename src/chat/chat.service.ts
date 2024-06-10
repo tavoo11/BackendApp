@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { Chat } from './entities/chat.entity';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { User } from 'src/users/entities/user.entity';
-//import { ChatGateway } from './chat.gateway'
 
 @Injectable()
 export class ChatService {
@@ -13,7 +12,6 @@ export class ChatService {
     private chatRepository: Repository<Chat>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    //private chatGateway: ChatGateway, // Inyecta el ChatGateway
   ) {}
 
   async createMessage(createChatDto: CreateChatDto): Promise<Chat> {
@@ -21,10 +19,6 @@ export class ChatService {
 
     const sender = await this.userRepository.findOne({ where: { id: senderId } });
     const receiver = await this.userRepository.findOne({ where: { id: receiverId } });
-
-
-    console.log('Sender:', sender); // Agregar esta línea para debug
-    console.log('Receiver:', receiver); // Agregar esta línea para debug
 
     if (!sender || !receiver) {
       throw new Error('Sender or receiver not found');
@@ -37,10 +31,16 @@ export class ChatService {
     });
 
     await this.chatRepository.save(message);
-
-     // Emitir el mensaje al ChatGateway
-     //this.chatGateway.handleCreateChat(message);
-
     return message;
+  }
+
+  async getMessages(userId: number): Promise<Chat[]> {
+    return this.chatRepository.find({
+      where: [
+        { sender: { id: userId } },
+        { receiver: { id: userId } }
+      ],
+      relations: ['sender', 'receiver'],
+    });
   }
 }

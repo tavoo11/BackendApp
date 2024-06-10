@@ -1,3 +1,4 @@
+// chat.gateway.ts
 import {
   MessageBody,
   SubscribeMessage,
@@ -10,7 +11,7 @@ import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 
 @WebSocketGateway({
-  cors:{
+  cors: {
     origin: "*"
   }
 })
@@ -50,6 +51,8 @@ export class ChatGateway {
       const message = await this.chatService.createMessage(createChatDto);
       const roomId = `user_${createChatDto.receiverId}`;
       this.server.to(roomId).emit('receiveMessage', message);
+      // Emitir una notificación al receptor
+      this.server.to(roomId).emit('notification', { message: 'Tienes un nuevo mensaje'});
       console.log('Message sent to room:', roomId);
     } catch (error) {
       console.error('Error creating message:', error);
