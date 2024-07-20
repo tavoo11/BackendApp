@@ -6,10 +6,12 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('login') // Ruta para el inicio de sesión
+  @Post('login')
   async login(@Body() createAuthDto: CreateAuthDto) {
     const user = await this.authService.validateUser(createAuthDto);
-    if (!user) throw new HttpException('Credenciales invalidas', HttpStatus.UNAUTHORIZED);
-    return user;
+    if (user instanceof HttpException) {
+      throw user;  // Lanza la excepción si es un HttpException
+    }
+    return { token: user };
   }
 }

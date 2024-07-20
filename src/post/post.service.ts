@@ -17,8 +17,11 @@ export class PostService {
     return this.PostRepository.save(newPost);
   }
 
-  async findAll() {
-    return  await this.PostRepository.find();
+  async findAll(): Promise<Post[]> {
+    return await this.PostRepository.find({
+      relations: ['author'], // Include 'author' in relations
+      order: { id: 'DESC' }, // Order by ID in descending order
+    });
   }
 
   async findOne(type: 'text' | 'image' | 'video') {

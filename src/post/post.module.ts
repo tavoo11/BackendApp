@@ -22,6 +22,7 @@ import { diskStorage } from 'multer';
   ],
   controllers: [PostController],
   providers: [PostService],
+  exports: [TypeOrmModule] 
 })
 export class PostModule {}
 

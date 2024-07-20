@@ -1,4 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, 
+        Get, Post, Body, 
+        Patch, Param, Delete, 
+        ParseIntPipe, UseInterceptors, 
+        UploadedFile, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,8 +25,12 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  async findAll(@Query() query: any) {
+    const users = await this.usersService.findAll(query);
+    return users.map((user) =>{
+      delete user.password
+      return user;
+    })
   }
 
   @Get(':id')

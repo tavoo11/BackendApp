@@ -28,8 +28,8 @@ export class UsersService {
     return new HttpException('El usuario ya existe', HttpStatus.CONFLICT);
   }
 
-  findAll() {
-    return this.userRepository.find();
+  findAll(query) {
+    return this.userRepository.find()
   }
 
   async findOne(id: number) {

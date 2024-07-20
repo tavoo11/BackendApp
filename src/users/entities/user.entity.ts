@@ -1,5 +1,5 @@
 // users.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, BeforeInsert } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, BeforeInsert} from 'typeorm';
 import { Post } from 'src/post/entities/post.entity';
 import { Chat } from 'src/chat/entities/chat.entity';
 import * as bcrypt from 'bcrypt';

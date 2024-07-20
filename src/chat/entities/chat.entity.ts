@@ -10,6 +10,9 @@ export class Chat {
   @Column()
   content: string; // Contenido del mensaje
 
+  @Column({type: 'datetime', default: () => 'CURRENT_TIMESTAMP'})
+  createdAt: Date;
+
   @ManyToOne(() => User, user => user.sentMessages)
   sender: User; // Usuario que envía el mensaje
 

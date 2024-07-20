@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm'; 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { LikesModule } from './likes/likes.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
     PostModule,
     ChatModule,
     AuthModule,
+    LikesModule,
+    CommentsModule,
   ],
 })
 export class AppModule {}
