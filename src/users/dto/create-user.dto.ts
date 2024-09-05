@@ -7,4 +7,7 @@ export class CreateUserDto {
     lastName: string
     birthDate: Date
     profilePhotoUrl?: string
+    role: string
+    position: string
+    phoneNumber: string
 }

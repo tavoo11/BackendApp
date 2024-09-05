@@ -1,18 +1,17 @@
-// users.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, BeforeInsert} from 'typeorm';
-import { Post } from 'src/post/entities/post.entity';
-import { Chat } from 'src/chat/entities/chat.entity';
+import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, OneToMany } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Notification } from '../../notifications/entities/notification.entity';
+import { Task } from '../../task/entities/task.entity';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({unique: true})
+  @Column({ unique: true })
   username: string;
 
-  @Column({unique: true})
+  @Column({ unique: true })
   email: string;
 
   @Column()
@@ -20,29 +19,33 @@ export class User {
 
   @BeforeInsert()
   async hashPassword() {
-    // Genera un hash para la contraseña antes de insertarla en la base de datos
-    this.password = await bcrypt.hash(this.password, 10); // 10 es el número de rondas de hashing
+    this.password = await bcrypt.hash(this.password, 10);
   }
 
   @Column()
-  firstName: string; // Nombre
+  firstName: string;
 
   @Column({ nullable: true })
-  lastName: string; // Apellidos
+  lastName: string;
 
   @Column()
-  birthDate: Date; // Fecha de nacimiento
+  birthDate: Date;
 
   @Column({ nullable: true })
-  profilePhotoUrl: string; // URL de la foto de perfil
+  profilePhotoUrl: string;
 
-  @OneToMany(() => Post, post => post.author) // Relación uno a muchos con las publicaciones
-  posts: Post[]; // Propiedad para almacenar las publicaciones del usuario
+  @Column({ default: 'worker' }) // Rol del trabajador, por defecto 'worker'
+  role: string;
 
-  @OneToMany(() => Chat, chat => chat.sender) // Relación uno a muchos con los mensajes enviados
-  sentMessages: Chat[];
+  @Column({ nullable: true })
+  position: string; // Posición específica en el vivero
 
-  @OneToMany(() => Chat, chat => chat.receiver) // Relación uno a muchos con los mensajes recibidos
-  receivedMessages: Chat[];
+  @Column({ nullable: true })
+  phoneNumber: string; // Número de teléfono del trabajador
+
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications: Notification[];  
+
+  @OneToMany(() => Task, task => task.user)
+  tasks: Task[];
 }
-

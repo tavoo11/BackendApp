@@ -1,13 +1,15 @@
 import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
-import { PostModule } from './post/post.module';
-import { ChatModule } from './chat/chat.module';
+import { PlantModule } from './plant/plant.module';
+import { NotificationsModule } from './notifications/notification.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm'; 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { LikesModule } from './likes/likes.module';
-import { CommentsModule } from './comments/comments.module';
+import { TaskModule } from './task/task.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { PlantNeedsModule } from './plant-needs/plant-needs.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -26,11 +28,13 @@ import { CommentsModule } from './comments/comments.module';
         configService.get<TypeOrmModuleOptions>('database'),
     }),
     UsersModule,
-    PostModule,
-    ChatModule,
+    PlantModule,
+    NotificationsModule,
     AuthModule,
-    LikesModule,
-    CommentsModule,
+    TaskModule,
+    MonitoringModule,
+    PlantNeedsModule,
+    ScheduleModule.forRoot(),
   ],
 })
 export class AppModule {}

@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,26 +10,26 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     public userRepository: Repository<User>
-  ){}
+  ) {}
 
-  async createUser(user : CreateUserDto) {
+  async createUser(user: CreateUserDto) {
     const userFound = await this.userRepository.findOne({
-      where: {
-        username: user.username,
-        email: user.email
-      }
-    })
+      where: [
+        { username: user.username },
+        { email: user.email }
+      ]
+    });
 
-    if (!userFound){
+    if (!userFound) {
       const newUser = this.userRepository.create(user);
       return this.userRepository.save(newUser);
     }
     
-    return new HttpException('El usuario ya existe', HttpStatus.CONFLICT);
+    throw new HttpException('El usuario ya existe', HttpStatus.CONFLICT);
   }
 
-  findAll(query) {
-    return this.userRepository.find()
+  findAll() {
+    return this.userRepository.find(); // Simplificado sin relaciones adicionales
   }
 
   async findOne(id: number) {
@@ -38,17 +38,25 @@ export class UsersService {
     });
 
     if (!userFound) {
-      return new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
     }
 
     return userFound;
   }
 
-  update(id: number, updateUser: UpdateUserDto) {
-    return this.userRepository.update({ id }, updateUser);
+  async update(id: number, updateUser: UpdateUserDto) {
+    const updateResult = await this.userRepository.update({ id }, updateUser);
+    if (updateResult.affected === 0) {
+      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+    }
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return this.userRepository.delete({ id });
+  async remove(id: number) {
+    const deleteResult = await this.userRepository.delete({ id });
+    if (deleteResult.affected === 0) {
+      throw new HttpException('Usuario no encontrado', HttpStatus.NOT_FOUND);
+    }
+    return { deleted: true };
   }
 }
