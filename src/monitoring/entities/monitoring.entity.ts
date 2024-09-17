@@ -22,6 +22,18 @@ export class Monitoring {
   @Column({ nullable: true })
   growthStage?: string;  // Etapa de crecimiento
 
+  @Column({ type: 'float', nullable: true })
+  temperature?: number;  // Temperatura actual (ºC)
+
+  @Column({ type: 'float', nullable: true })
+  precipitation?: number;  // Precipitación actual (mm)
+
+  @Column({ type: 'float', nullable: true })
+  windSpeed?: number;  // Velocidad del viento actual (km/h)
+
+  @Column({ type: 'float', nullable: true })
+  humidity?: number;  // Humedad relativa actual (%)
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;  // Usuario que realiza el monitoreo

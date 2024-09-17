@@ -4,5 +4,6 @@ export class CreateTaskDto {
     userId?: number;
     plantId?: number;  // Si la tarea está asociada con una planta específica
     isCompleted?: boolean;
+    plantNeedsId?: number;
   }
   

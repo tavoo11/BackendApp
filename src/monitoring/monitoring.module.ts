@@ -3,16 +3,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MonitoringService } from './monitoring.service';
 import { MonitoringController } from './monitoring.controller';
 import { Monitoring } from './entities/monitoring.entity';
-import { User } from '../users/entities/user.entity';
-import { Plant } from '../plant/entities/plant.entity'; 
-import { UsersModule } from 'src/users/users.module';
-import { PlantModule } from '../plant/plant.module';
+import { WeatherService } from '../api-meteomatics';
+import { HttpModule } from '@nestjs/axios'; // Importa HttpModule aquí
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Monitoring, User, Plant]),
-  UsersModule,
-  PlantModule],
+  imports: [
+    TypeOrmModule.forFeature([Monitoring]),
+    HttpModule, // Asegúrate de incluir HttpModule
+  ],
   controllers: [MonitoringController],
-  providers: [MonitoringService],
+  providers: [MonitoringService, WeatherService],
+  exports: [MonitoringService],
 })
 export class MonitoringModule {}

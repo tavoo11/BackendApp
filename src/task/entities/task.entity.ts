@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Plant } from '../../plant/entities/plant.entity';
+import { PlantNeeds } from 'src/plant-needs/entities/plant-need.entity';
 
 @Entity()
 export class Task {
@@ -20,10 +21,14 @@ export class Task {
   isCompleted: boolean;
 
   @ManyToOne(() => User, user => user.tasks, { nullable: false, eager: true })
-  @JoinColumn({ name: 'userId' })  // Se asegura de que se almacene como una columna separada
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @ManyToOne(() => Plant, plant => plant.tasks, { nullable: true, eager: true })
   @JoinColumn({ name: 'plantId' })
   plant: Plant;
+
+  @ManyToOne(() => PlantNeeds, plantNeeds => plantNeeds.tasks, { nullable: true, eager: true })
+  @JoinColumn({ name: 'plantNeedsId' })
+  plantNeeds: PlantNeeds;  // Corregido de `plantNeedsId` a `plantNeeds`
 }

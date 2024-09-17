@@ -12,10 +12,12 @@ import { PlantModule } from '../plant/plant.module';
 import { WeatherModule } from '../weather.module';
 import { AutoTaskSchedulerService } from './auto-task-scheduler.service';
 import { PlantNeedsModule } from '../plant-needs/plant-needs.module';
+import { JwtService } from '@nestjs/jwt';
+import { PlantNeeds } from 'src/plant-needs/entities/plant-need.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, User, Plant]),
+    TypeOrmModule.forFeature([Task, User, Plant, PlantNeeds]),
     NotificationsModule, // Importa el módulo de notificaciones
     UsersModule,
     PlantModule,
@@ -23,7 +25,7 @@ import { PlantNeedsModule } from '../plant-needs/plant-needs.module';
     WeatherModule
   ],
   controllers: [TaskController],
-  providers: [TaskService, AutoTaskSchedulerService],
+  providers: [TaskService,  AutoTaskSchedulerService, JwtService],
   exports: [TaskService]
 })
 export class TaskModule {}

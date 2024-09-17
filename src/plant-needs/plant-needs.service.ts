@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PlantNeeds } from './entities/plant-need.entity';
@@ -24,25 +24,42 @@ export class PlantNeedsService {
       throw new NotFoundException(`Plant with id ${plantId} not found`);
     }
 
-    const plantNeeds = this.plantNeedsRepository.create({
-      ...rest,
-      plant: plant,
-    });
+    try {
+      const plantNeeds = this.plantNeedsRepository.create({
+        ...rest,
+        plant: plant,
+      });
 
-    return this.plantNeedsRepository.save(plantNeeds);
+      return await this.plantNeedsRepository.save(plantNeeds);
+    } catch (error) {
+      throw new InternalServerErrorException('Error saving plant needs');
+    }
   }
 
   async findAll(): Promise<PlantNeeds[]> {
-    return this.plantNeedsRepository.find({
-      relations: ['plant'], // Incluye la relación 'plant'
-    });
+    try {
+      return await this.plantNeedsRepository.find({
+        relations: ['plant'], // Incluye la relación 'plant'
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Error fetching plant needs');
+    }
   }
-  
+
   async findOne(id: number): Promise<PlantNeeds> {
-    return this.plantNeedsRepository.findOne({
-      where: { id },
-      relations: ['plant'], // Incluye la relación 'plant' también para findOne
-    });
+    try {
+      const plantNeeds = await this.plantNeedsRepository.findOne({
+        where: { id },
+        relations: ['plant'], // Incluye la relación 'plant' también para findOne
+      });
+
+      if (!plantNeeds) {
+        throw new NotFoundException(`Plant needs with id ${id} not found`);
+      }
+
+      return plantNeeds;
+    } catch (error) {
+      throw new InternalServerErrorException('Error fetching plant needs');
+    }
   }
-  
 }

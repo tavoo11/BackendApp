@@ -1,10 +1,9 @@
-// src/tasks/auto-task-scheduler.service.ts
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TaskService } from './task.service';
 import { PlantNeedsService } from '../plant-needs/plant-needs.service';
 import { WeatherService } from '../api-meteomatics';
-import { NotificationsGateway } from '../notifications/notification.gateway';  // Asegúrate de importar el gateway correctamente
+import { NotificationsGateway } from '../notifications/notification.gateway';
 
 @Injectable()
 export class AutoTaskSchedulerService {
@@ -12,63 +11,84 @@ export class AutoTaskSchedulerService {
     private readonly taskService: TaskService,
     private readonly plantNeedsService: PlantNeedsService,
     private readonly weatherService: WeatherService,
-    private readonly notificationsGateway: NotificationsGateway,  // Inyectamos NotificationsGateway
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_MINUTES) // Configuración para ejecutarse cada hora
+  @Cron(CronExpression.EVERY_HOUR)
   async handleCron() {
     console.log('Ejecutando tarea programada para verificar y asignar tareas automáticamente');
     await this.scheduleTasks();
   }
-// // Obtener datos meteorológicos actuales
-    // const weatherData = await this.weatherService.getWeatherData(
-    //   'now', // Utiliza 'now' para obtener datos actuales
-    //   't_2m:C', // Solo necesitamos la temperatura
-    // );
 
-    // // Obtener la temperatura actual
-    // const currentTemperature = weatherData.data.find((d) => d.parameter === 't_2m:C').coordinates[0].dates[0].value;
-    async scheduleTasks() {
-      // Obtener todas las necesidades de las plantas
-      const allPlantNeeds = await this.plantNeedsService.findAll();
-      
-      // Obtener datos meteorológicos actuales
-      const weatherData = await this.weatherService.getWeatherData(
-        'now', // Utiliza 'now' para obtener datos actuales
-        't_2m:C', // Solo necesitamos la temperatura
-      );
-    
-      // Obtener la temperatura actual
-      const currentTemperature = weatherData.data.find((d) => d.parameter === 't_2m:C').coordinates[0].dates[0].value;
-    
+  async scheduleTasks() {
+    const allPlantNeeds = await this.plantNeedsService.findAll();
+    const weatherData = await this.weatherService.getWeatherData('now', 't_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p');
+
+    if (!weatherData || !weatherData.data) {
+      console.error('No se pudo obtener los datos meteorológicos.');
+      return;
+    }
+
+    const currentTemperature = this.extractWeatherParameter(weatherData, 't_2m:C');
+    const currentPrecipitation = this.extractWeatherParameter(weatherData, 'precip_1h:mm');
+    const currentWindSpeed = this.extractWeatherParameter(weatherData, 'wind_speed_10m:ms');
+    const currentHumidity = this.extractWeatherParameter(weatherData, 'relative_humidity_2m:p');
+
+    // Aquí podrías tener una lógica para asignar tareas a todos los usuarios conectados o a usuarios específicos
+    const allSocketIds = [...this.notificationsGateway.getAllSocketIds()]; // Reemplaza con el método adecuado para obtener todos los socketIds
+
+    for (const socketId of allSocketIds) {
+      const userId = this.notificationsGateway.getUserIdBySocketId(socketId);
+
+      if (!userId) {
+        console.error(`No se pudo obtener el userId para el socketId ${socketId}`);
+        continue;
+      }
+
       for (const plantNeeds of allPlantNeeds) {
         let taskDescription = '';
-    
+
         if (currentTemperature > plantNeeds.maxTemperature) {
-          taskDescription = `¡La temperatura es alta!, es momento de regar las plantas ${plantNeeds.plant.tag} - ${plantNeeds.plant.species}`;
+          taskDescription = `¡La temperatura es alta! Es momento de ubicarlas en la sombra ${plantNeeds.plant.tag} - ${plantNeeds.plant.species}`;
         } else if (currentTemperature < plantNeeds.minTemperature) {
           taskDescription = `¡La temperatura bajó! Proporcionar luz a las plantas ${plantNeeds.plant.tag} - ${plantNeeds.plant.species}`;
+        } else  if (currentHumidity < plantNeeds.humidityRequirement) {
+          taskDescription += ` Necesitamos aumentar la luminosidad para las plantas ${plantNeeds.plant.tag} - ${plantNeeds.plant.species}.`;
         }
-    
+
+        if (currentPrecipitation < plantNeeds.maxPrecipitation) {
+          taskDescription += ` No es buen momento para regar las plantas manualmente debido a alta luminosidad para ${plantNeeds.plant.tag} - ${plantNeeds.plant.species}.`;
+        }
+
+        if (currentWindSpeed > plantNeeds.maxWindSpeed) {
+          taskDescription += ` Proteger las plantas ${plantNeeds.plant.tag} - ${plantNeeds.plant.species} debido a alta velocidad del viento.`;
+        }
+
+       
+
         if (taskDescription) {
-          // Obtener el userId del usuario asignado a la planta
-          const userId = 2; // Asegúrate de que este campo esté disponible en `plantNeeds.plant`
-    
-          // Crear una tarea automáticamente con el usuario asignado
           const task = await this.taskService.createTask({
             description: taskDescription,
             dueDate: new Date(),
             plantId: plantNeeds.plant.id,
             isCompleted: false,
-            userId: userId, // Asigna el ID del usuario aquí
+            userId: parseInt(userId),
+            plantNeedsId: (plantNeeds.id) // Aquí se agrega plantNeedsId
           });
-    
+
           console.log('Tarea creada:', task);
-    
-          // Enviar notificación al usuario conectado
-          this.notificationsGateway.sendNotificationToUser(userId, `Se ha creado una nueva tarea: ${task.description}`);
+          this.notificationsGateway.sendNotificationToUser(parseInt(userId), `Se ha creado una nueva tarea: ${task.description}`);
         }
       }
     }
-    
+  }
+
+  extractWeatherParameter(weatherData: any, parameter: string): number {
+    const data = weatherData.data.find((d) => d.parameter === parameter);
+    if (data && data.coordinates.length > 0 && data.coordinates[0].dates.length > 0) {
+      return data.coordinates[0].dates[0].value;
+    }
+    console.error(`No se pudo encontrar el parámetro de clima: ${parameter}`);
+    return 0;
+  }
 }

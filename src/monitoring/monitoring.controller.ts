@@ -8,7 +8,8 @@ export class MonitoringController {
 
   @Post()
   create(@Body() createMonitoringDto: CreateMonitoringDto) {
-    return this.monitoringService.create(createMonitoringDto);
+    const { plantId, userId, observations } = createMonitoringDto;
+    return this.monitoringService.createMonitoring(plantId, userId, observations);
   }
 
   @Get()

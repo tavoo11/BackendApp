@@ -67,4 +67,14 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     this.server.to(roomId).emit('receiveNotification', { message });
     console.log(`Notification sent to user ${userId} in room: ${roomId}`);
   }
+
+  // Método para obtener todos los socketIds
+  getAllSocketIds(): string[] {
+    return Array.from(this.activeUsers.keys());
+  }
+
+  // Método para obtener el userId a partir del socketId
+  getUserIdBySocketId(socketId: string): string | undefined {
+    return this.activeUsers.get(socketId);
+  }
 }

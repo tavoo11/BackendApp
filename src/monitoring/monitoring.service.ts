@@ -5,36 +5,37 @@ import { Monitoring } from './entities/monitoring.entity';
 import { CreateMonitoringDto } from './dto/create-monitoring.dto';
 import { User } from '../users/entities/user.entity';
 import { Plant } from '../plant/entities/plant.entity';
+import { WeatherService } from 'src/api-meteomatics';
 
 @Injectable()
 export class MonitoringService {
   constructor(
     @InjectRepository(Monitoring)
-    private monitoringRepository: Repository<Monitoring>,
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-    @InjectRepository(Plant)
-    private plantsRepository: Repository<Plant>,
+    private readonly monitoringRepository: Repository<Monitoring>,
+    private readonly weatherService: WeatherService,
   ) {}
 
-  async create(createMonitoringDto: CreateMonitoringDto): Promise<Monitoring> {
-    const user = await this.usersRepository.findOne({ where: { id: createMonitoringDto.userId } });
-    const plant = await this.plantsRepository.findOne({ where: { id: createMonitoringDto.plantId } });
+  async createMonitoring(plantId: number, userId: number, observations: string): Promise<Monitoring> {
+    const weatherData = await this.weatherService.getWeatherData('now', 't_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p');
 
-    if (!user || !plant) {
-      throw new Error('User or Plant not found');
-    }
+    const temperature = weatherData.data.find(d => d.parameter === 't_2m:C')?.coordinates[0]?.dates[0]?.value || null;
+    const precipitation = weatherData.data.find(d => d.parameter === 'precip_1h:mm')?.coordinates[0]?.dates[0]?.value || null;
+    const windSpeed = weatherData.data.find(d => d.parameter === 'wind_speed_10m:ms')?.coordinates[0]?.dates[0]?.value || null;
+    const humidity = weatherData.data.find(d => d.parameter === 'relative_humidity_2m:p')?.coordinates[0]?.dates[0]?.value || null;
 
-    const monitoring = new Monitoring();
-    monitoring.user = user;
-    monitoring.plant = plant;
-    monitoring.observations = createMonitoringDto.observations;
-    monitoring.height = createMonitoringDto.height;
-    monitoring.healthStatus = createMonitoringDto.healthStatus;
-    monitoring.growthStage = createMonitoringDto.growthStage;
+    const monitoring = this.monitoringRepository.create({
+      plant: { id: plantId },
+      user: { id: userId },
+      observations,
+      temperature,
+      precipitation,
+      windSpeed,
+      humidity,
+    });
 
     return this.monitoringRepository.save(monitoring);
   }
+
 
   async findAll(): Promise<Monitoring[]> {
     return this.monitoringRepository.find({
