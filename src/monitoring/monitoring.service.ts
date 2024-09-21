@@ -16,7 +16,7 @@ export class MonitoringService {
   ) {}
 
   async createMonitoring(plantId: number, userId: number, observations: string): Promise<Monitoring> {
-    const weatherData = await this.weatherService.getWeatherData('now', 't_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p');
+    const weatherData = await this.weatherService.getCurrentWeather();
 
     const temperature = weatherData.data.find(d => d.parameter === 't_2m:C')?.coordinates[0]?.dates[0]?.value || null;
     const precipitation = weatherData.data.find(d => d.parameter === 'precip_1h:mm')?.coordinates[0]?.dates[0]?.value || null;

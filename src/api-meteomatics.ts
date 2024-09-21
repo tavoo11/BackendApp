@@ -1,32 +1,38 @@
 import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios'; // Importa HttpService desde @nestjs/axios
+import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class WeatherService {
-  private readonly baseUrl = 'https://api.meteomatics.com';
-  private readonly username = 'universidaddecordoba_macea_gustavo';
-  private readonly password = '3EHEEap2e1';
-  private readonly location = '5.2666638888889,-74.166669444444'; // Coordenadas de paramo de guerrero
+  private readonly apiKey = '6a4fb1e3eb28407ab4f12851242109';
+  private readonly baseUrl = 'http://api.weatherapi.com/v1';
+  private readonly location = '5.2666638888889,-74.166669444444'; // Coordenadas del paramo de guerrero
 
-  constructor(private readonly httpService: HttpService) {}  // Usa HttpService correctamente
+  constructor(private readonly httpService: HttpService) {}
 
-  async getWeatherData(date: string, parameters: string, format: string = 'json'): Promise<any> {
-    const url = `${this.baseUrl}/${date}/${parameters}/${this.location}/${format}`;
-    
+  // Método actualizado para obtener el clima actual
+  async getCurrentWeather(): Promise<any> {
+    const url = `${this.baseUrl}/current.json?key=${this.apiKey}&q=${this.location}`;
+
     try {
-      const response = await lastValueFrom(
-        this.httpService.get(url, {
-          auth: {
-            username: this.username,
-            password: this.password,
-          },
-        }),
-      );
+      const response = await lastValueFrom(this.httpService.get(url));
       return response.data;
     } catch (error) {
-      console.error('Error fetching weather data:', error.message);
-      throw new Error('Failed to fetch weather data');
+      console.error('Error fetching current weather data:', error.message);
+      throw new Error('Failed to fetch current weather data');
+    }
+  }
+
+  // Método para obtener el pronóstico
+  async getForecast(days: number): Promise<any> {
+    const url = `${this.baseUrl}/forecast.json?key=${this.apiKey}&q=${this.location}&days=${days}`;
+
+    try {
+      const response = await lastValueFrom(this.httpService.get(url));
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching weather forecast:', error.message);
+      throw new Error('Failed to fetch weather forecast');
     }
   }
 }

@@ -1,3 +1,4 @@
+// task.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,8 +8,9 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { User } from '../users/entities/user.entity';
 import { Plant } from '../plant/entities/plant.entity';
 import { PlantNeeds } from '../plant-needs/entities/plant-need.entity';
-import { WeatherService } from '../api-meteomatics'; // Asegúrate de importar el servicio correctamente
+import { WeatherService } from '../api-meteomatics';
 import { NotificationsService } from '../notifications/notification.service';
+import { TaskGateway } from './task.gateway'; // Importar TaskGateway
 
 @Injectable()
 export class TaskService {
@@ -20,9 +22,10 @@ export class TaskService {
     @InjectRepository(Plant)
     private plantRepository: Repository<Plant>,
     @InjectRepository(PlantNeeds)
-    private plantNeedsRepository: Repository<PlantNeeds>,  // Añadido el repositorio de PlantNeeds
-    private readonly weatherService: WeatherService,  // Inyectamos WeatherService
-    private notificationsService: NotificationsService, 
+    private plantNeedsRepository: Repository<PlantNeeds>,
+    private readonly weatherService: WeatherService,
+    private notificationsService: NotificationsService,
+    private taskGateway: TaskGateway,  // Inyectar TaskGateway
   ) {}
 
   async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -36,35 +39,27 @@ export class TaskService {
     const plant = plantId ? await this.plantRepository.findOne({ where: { id: plantId } }) : null;
     const plantNeeds = plantNeedsId ? await this.plantNeedsRepository.findOne({ where: { id: plantNeedsId } }) : null;
 
-    // Obtén la fecha actual en el formato requerido por la API de Meteomatics
-    const currentDate = new Date().toISOString();
-
-    // Define los parámetros que deseas obtener de la API de Meteomatics
-    const parameters = 't_2m:C,precip_1h:mm,wind_speed_10m:ms'; // Temperatura, precipitación y velocidad del viento
-
-    // Obtén los datos meteorológicos
-    const weatherData = await this.weatherService.getWeatherData(currentDate, parameters);
-
-    // Aquí puedes usar los datos meteorológicos para determinar la descripción o los detalles de la tarea
-    // Por ejemplo, ajustar la descripción de la tarea en base a la temperatura y otras condiciones climáticas
+    const weatherData = await this.weatherService.getCurrentWeather();
     const dynamicDescription = `${description} - Condiciones meteorológicas: ${JSON.stringify(weatherData)}`;
 
     const task = this.taskRepository.create({
-      description: dynamicDescription,  // Usamos la descripción dinámica
+      description: dynamicDescription,
       dueDate,
       user,
       plant,
-      plantNeeds,  // Añadido plantNeeds
+      plantNeeds,
     });
 
     const savedTask = await this.taskRepository.save(task);
 
-    // Crear una notificación para el usuario cuando se crea una nueva tarea
     const notificationMessage = `Nueva tarea asignada: ${dynamicDescription}`;
     await this.notificationsService.createNotification({
       message: notificationMessage,
       userId: userId,
     });
+
+    // Emitir el evento de nueva tarea a través de Socket.IO
+    this.taskGateway.sendTaskToUser(userId, savedTask);
 
     return savedTask;
   }
@@ -76,7 +71,12 @@ export class TaskService {
     }
 
     Object.assign(task, updateTaskDto);
-    return this.taskRepository.save(task);
+    const updatedTask = await this.taskRepository.save(task);
+
+    // Emitir evento de tarea actualizada
+    this.taskGateway.sendUpdatedTask(updatedTask);
+
+    return updatedTask;
   }
 
   async deleteTask(id: number): Promise<void> {
@@ -86,6 +86,9 @@ export class TaskService {
     }
 
     await this.taskRepository.remove(task);
+
+    // Emitir evento de tarea eliminada
+    this.taskGateway.sendDeletedTask(id);
   }
 
   async getTasksForUser(userId: number): Promise<Task[]> {
